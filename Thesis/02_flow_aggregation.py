@@ -2,7 +2,7 @@ import pandas as pd
 import glob
 import os
 import numpy as np
-import psutil
+import utils
 
 #*---- 1.ΡΥΘΜΙΣΕΙΣ ----
 
@@ -10,66 +10,9 @@ import psutil
 INPUT_FOLDER = 'processed_data/'
 OUTPUT_FOLDER = 'bidirectional_data/' 
                
-
 # Δημιουργία φακέλου εξόδου αν δεν υπάρχει
 if not os.path.exists(OUTPUT_FOLDER):
     os.makedirs(OUTPUT_FOLDER)
-
-# Oρισμός τύπων δεδομένων
-DTYPES = {
-    "Src_IP": "string",
-    "Dst_IP": "string",
-    "Protocol": "string",
-    "Bytes_In": "object",  
-    "Bytes_Out": "object",
-}
-
-# Υπολογίζει το βέλτιστο μέγεθος chunk βάσει της διαθέσιμης μνήμης.
-def get_optimal_chunk_size(file_path, safety_factor=0.15):
-    try:
-        mem = psutil.virtual_memory()
-        available_ram = mem.available
-        sample = pd.read_csv(file_path, nrows=2000, low_memory=False)
-        sample_memory_bytes = sample.memory_usage(deep=True).sum()
-        bytes_per_row = sample_memory_bytes / 2000
-        target_chunk_memory = available_ram * safety_factor
-        optimal_size = int(target_chunk_memory / bytes_per_row)
-        return max(10000, min(optimal_size, 2000000))
-    except Exception:
-        return 500000
-
-# Μετατρέπει τα MikroTik strings (π.χ. '5.7 M', '240 B', '1.2 k') σε καθαρούς αριθμούς.
-def parse_mikrotik_bytes(val):
-    if pd.isna(val): return 0.0
-    
-    # Μετατροπή σε string, καθαρισμός κενών και κεφαλαία
-    s = str(val).strip().upper().replace(',', '.') 
-    
-    try:
-        # Αν είναι καθαρός αριθμός
-        return float(s)
-    except ValueError:
-        pass # Συνεχίζουμε αν δεν είναι αριθμός
-    
-    multiplier = 1.0
-    if 'M' in s:
-        multiplier = 1_000_000.0
-        s = s.replace('M', '').replace('B', '') # Αφαιρούμε M, B, MiB κλπ
-    elif 'K' in s:
-        multiplier = 1_000.0
-        s = s.replace('K', '').replace('B', '')
-    elif 'G' in s:
-        multiplier = 1_000_000_000.0
-        s = s.replace('G', '').replace('B', '')
-    elif 'B' in s:
-        s = s.replace('B', '') # Αν λέει απλά "200 B"
-        
-    try:
-        # Καθαρίζουμε τυχόν εναπομείναντα γράμματα
-        clean_num = "".join(filter(lambda x: x.isdigit() or x == '.', s))
-        return float(clean_num) * multiplier
-    except:
-        return 0.0
 
 # Εύρεση όλων των καθαρών αρχείων
 files = glob.glob(os.path.join(INPUT_FOLDER, "clean_*.csv"))
@@ -82,7 +25,7 @@ for file_path in files:
     print(f"\nΕπεξεργασία αρχείου: {file_name}")
 
     # Αυτόματος υπολογισμός Chunk Size
-    current_chunk_size = get_optimal_chunk_size(file_path)
+    current_chunk_size = utils.get_optimal_chunk_size(file_path)
     print(f"   --> Chunk Size: {current_chunk_size:,} γραμμές")
 
     # Δημιουργία λίστας για την αποθήκευση των επεξεργασμένων chunks
@@ -91,7 +34,7 @@ for file_path in files:
     # low_memory=False για την αποφυγή προειδοποιήσεων τύπου
     reader = pd.read_csv(
         file_path,
-        dtype=DTYPES,
+        dtype=utils.DTYPES,
         chunksize=current_chunk_size,
         low_memory=False,
         on_bad_lines='skip'
@@ -104,8 +47,8 @@ for file_path in files:
         chunk["Src_Port"] = pd.to_numeric(chunk["Src_Port"], errors='coerce').fillna(-1).astype(int)
         chunk["Dst_Port"] = pd.to_numeric(chunk["Dst_Port"], errors='coerce').fillna(-1).astype(int)
 
-        chunk["Bytes_In"] = chunk["Bytes_In"].apply(parse_mikrotik_bytes)
-        chunk["Bytes_Out"] = chunk["Bytes_Out"].apply(parse_mikrotik_bytes)
+        chunk["Bytes_In"] = chunk["Bytes_In"].apply(utils.parse_mikrotik_bytes)
+        chunk["Bytes_Out"] = chunk["Bytes_Out"].apply(utils.parse_mikrotik_bytes)
 
         # Πετάει τις γραμμές που δεν έχουν κίνηση
         chunk = chunk[(chunk["Bytes_In"] + chunk["Bytes_Out"]) > 0].copy()
