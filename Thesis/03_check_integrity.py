@@ -32,7 +32,7 @@ for bi_path in bi_files:
     df_clean = pd.read_csv(clean_path, dtype=utils.DTYPES, low_memory=False)
 
     # Καθαρισμός Clean Bytes για να κάνουμε τη σούμα
-    df_clean['Bytes_In_Num'] = df_clean['Bytes_In'].apply(utils.psutilparse_mikrotik_bytes)
+    df_clean['Bytes_In_Num'] = df_clean['Bytes_In'].apply(utils.parse_mikrotik_bytes)
     df_clean['Bytes_Out_Num'] = df_clean['Bytes_Out'].apply(utils.parse_mikrotik_bytes)
 
     # Καθαρισμός Ports στο Clean
