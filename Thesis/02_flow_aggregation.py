@@ -3,6 +3,7 @@ import glob
 import os
 import numpy as np
 import utils
+import gc     # Garbage Collector για διαχείριση μνήμης
 
 #*---- 1.ΡΥΘΜΙΣΕΙΣ ----
 
@@ -43,18 +44,30 @@ for file_path in files:
     # Επεξεργασία κάθε chunk
     for i, chunk in enumerate(reader, start=1):
 
-        # Καθαρισμός Ports και Bytes από τυχόν μη αριθμητικές τιμές
+        # Βελτιστοποίηση: Map αντί για apply σε κάθε γραμμή
+        for col in ["Bytes_In", "Bytes_Out"]:
+            unique_vals = chunk[col].unique()
+            val_map = {val: utils.parse_mikrotik_bytes(val) for val in unique_vals}
+            chunk[col] = chunk[col].map(val_map).fillna(0.0)
+
+        # Μετατροπή Ports σε Int.
+        # ΣΗΜΕΙΩΣΗ: Το -1 χρησιμοποιείται για "Unknown/Invalid Port".
         chunk["Src_Port"] = pd.to_numeric(chunk["Src_Port"], errors='coerce').fillna(-1).astype(int)
         chunk["Dst_Port"] = pd.to_numeric(chunk["Dst_Port"], errors='coerce').fillna(-1).astype(int)
-
-        chunk["Bytes_In"] = chunk["Bytes_In"].apply(utils.parse_mikrotik_bytes)
-        chunk["Bytes_Out"] = chunk["Bytes_Out"].apply(utils.parse_mikrotik_bytes)
 
         # Πετάει τις γραμμές που δεν έχουν κίνηση
         chunk = chunk[(chunk["Bytes_In"] + chunk["Bytes_Out"]) > 0].copy()
 
         if len(chunk) == 0: continue
 
+        #! ---------------------------------------------------------
+        #! ΣΧΟΛΙΟ ΑΣΦΑΛΕΙΑΣ (FEEDBACK UPDATE):
+        #! Η σύγκριση εδώ είναι ΛΕΞΙΚΟΓΡΑΦΙΚΗ (αλφαβητική) πάνω στα Hashes.
+        #! Το 'IP_A' είναι απλά το hash που προηγείται αλφαβητικά.
+        #! ΠΡΟΣΟΧΗ: Το IP_A ΔΕΝ σημαίνει απαραίτητα Client/Source.
+        #! Το IP_B ΔΕΝ σημαίνει απαραίτητα Server/Destination.
+        #! Χρησιμοποιείται ΜΟΝΟ για να ομαδοποιηθεί η κίνηση A<->B και B<->A στο ίδιο κλειδί.
+        #! ---------------------------------------------------------
         # Βρίσκει ποια είναι η μικρότερη IP και ποια η μεγαλύτερη
         chunk["IP_A"] = np.where(chunk["Src_IP"] < chunk["Dst_IP"], chunk["Src_IP"], chunk["Dst_IP"])
         chunk["IP_B"] = np.where(chunk["Src_IP"] < chunk["Dst_IP"], chunk["Dst_IP"], chunk["Src_IP"])
@@ -70,11 +83,12 @@ for file_path in files:
         #   Bytes_A_to_B = Bytes_Out (γιατί φεύγουν από τον Src)
         #   Bytes_B_to_A = Bytes_In (γιατί έρχονται στον Src)
         # Και το αντίστροφο αν ο Src είναι ο B.
-
         chunk["Bytes_A_to_B"] = np.where(src_is_A, chunk["Bytes_Out"], chunk["Bytes_In"])
         chunk["Bytes_B_to_A"] = np.where(src_is_A, chunk["Bytes_In"], chunk["Bytes_Out"])
 
-        # Ομαδοποίηση βάσει των "κανονικοοποιημένων" IP/Ports
+        # Ομαδοποίηση Chunk
+        # ΣΗΜΕΙΩΣΗ: Ομαδοποιούμε και ανά Protocol. 
+        # (Flows TCP A->B και UDP A->B θεωρούνται διαφορετικά flows).
         grouped = (
             chunk
             .groupby(["IP_A", "Port_A", "IP_B", "Port_B", "Protocol"], as_index=False)
@@ -85,7 +99,17 @@ for file_path in files:
             )
         )
         aggregated_chunks.append(grouped)
+
+        # MEMORY OPTIMIZATION (FEEDBACK UPDATE):
+        # Διαγράφουμε ρητά το raw chunk για να ελευθερώσουμε RAM πριν το επόμενο loop.
+        chunk_len = len(chunk)
+
+        del chunk
+        del src_is_A
         print(f"  Επεξεργάστηκε chunk {i} με {len(chunk)} γραμμές.")
+
+    # Ενεργοποίηση Garbage Collector για απελευθέρωση μνήμης
+    gc.collect()
 
     # Συνένωση όλων των ομαδοποιημένων chunks
     if not aggregated_chunks:
@@ -103,7 +127,18 @@ for file_path in files:
             Flow_Count=("Flow_Count", "sum")
         )
     )
+
+    # Διαγράφουμε τη λίστα για να ελευθερώσουμε μνήμη πριν την αποθήκευση
+    del aggregated_chunks
+    gc.collect()
+
+    # Προσθήκη στήλης με το συνολικό αριθμό bytes
     final["Total_Bytes"] = final["Bytes_A_to_B"] + final["Bytes_B_to_A"]
+
+    # --- FINAL SAFETY POLISH ---
+    # Βεβαιωνόμαστε ότι τα Ports είναι int στο τελικό αρχείο (αντί για float)
+    final["Port_A"] = final["Port_A"].astype(int)
+    final["Port_B"] = final["Port_B"].astype(int)
 
     # Αποθήκευση του τελικού αρχείου
     output_path = os.path.join(OUTPUT_FOLDER, f"bidirectional_{file_name}")
