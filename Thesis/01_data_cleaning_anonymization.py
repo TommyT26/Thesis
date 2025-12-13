@@ -1,15 +1,32 @@
 import pandas as pd
 import hashlib
+import hmac
 import os
 import glob
+from dotenv import load_dotenv
 
-#--------ρυθμίσεις φακέλων-----------
+#*---- 1.ΡΥΘΜΙΣΕΙΣ ----
+# Φορτώνουμε το κλειδί από το αρχείο .env
+load_dotenv()
+SALT_KEY_STR = os.getenv("THESIS_SALT_KEY")
+
+#! Έλεγχος αν λείπει το κλειδί
+if not SALT_KEY_STR:
+    raise ValueError("ΣΦΑΛΜΑ: Δεν βρέθηκε το κλειδί στο αρχείο .env")
+
+# Μετατροπή του κλειδιού σε bytes για χρήση με HMAC
+SALT_KEY_BYTES = SALT_KEY_STR.encode('utf-8')
+
+# Φάκελοι ειδόδου και εξόδου
 INPUT_FOLDER = 'raw_data/'
-OUTPUT_FILE = 'processed_data/'
+OUTPUT_FOLDER = 'processed_data/'
 
-if not os.path.exists(OUTPUT_FILE):
-    os.makedirs(OUTPUT_FILE)
+# Δημιουργία φακέλου εξόδου αν δεν υπάρχει
+if not os.path.exists(OUTPUT_FOLDER):
+    os.makedirs(OUTPUT_FOLDER)
 
+#*---- 2.ΟΡΙΣΜΟΣ ΣΤΗΛΩΝ ---- 
+# Τα raw αρχεία του MikroTik δεν έχουν κεφαλίδες
 COLUMN_NAMES = [
     "Event",
     "XEvent",
@@ -26,12 +43,24 @@ COLUMN_NAMES = [
     "Bytes_Out",
 ]
 
-def annonymize_ip(ip):
+#*---- 3.ΣΥΝΑΡΤΗΣΗ ΑΝΩΝΥΜΟΠΟΙΗΣΗΣ IP ----
+# Δέχεται μια IP και επιστρέφει ένα HMAC-SHA256 hash 16 χαρακτήρων 
+def anonymize_ip(ip):
+    # Αν η IP είναι κενή ή παύλα, επιστρέφει "unkown"
     if pd.isna(ip) or str(ip).strip() in ["", "-"]:
         return "unknown"
-    raw_str = str(ip) + SALT_KEY
-    return hashlib.sha256(raw_str.encode()).hexdigest()[:16]
+    
+    # Μετατροπή της IP σε bytes
+    msg_bytes = str(ip).encode('utf-8')
 
+    # Δημιουργία HMAC (Κλειδί, Μήνυμα, Αλγόριθμος)
+    hmac_obj = hmac.new(SALT_KEY_BYTES, msg_bytes, hashlib.sha256)
+
+    # Επιστρέφει τους πρώτους 16 χαρακτήρες του hash
+    return hmac_obj.hexdigest()[:16]
+
+#*---- 4.ΕΠΕΞΕΡΓΑΣΙΑ ΑΡΧΕΙΩΝ ----
+# Αναζήτηση αρχείων προς επεξεργασία και εκτύπωση πλήθους
 csv_files = glob.glob(os.path.join(INPUT_FOLDER, '*.csv'))
 print(f"Βρέθηκαν {len(csv_files)} αρχεία.")
 
@@ -39,19 +68,33 @@ for file_path in csv_files:
     file_name = os.path.basename(file_path)
     print(f"Επεξεργασία αρχείου: {file_name}")
 
+    # Διαβάζει το αρχείο σε κομμάτια 500.000 γραμμών για να μην γεμίσει η RAM
     chunk_size = 500000
-    chunks = pd.read_csv(file_path, chunksize=chunk_size, header=None, names=COLUMN_NAMES, encoding='utf-8', on_bad_lines='skip', low_memory=False)
+    chunks = pd.read_csv(
+        file_path,
+        chunksize=chunk_size, 
+        header=None,            # Δεν έχει κεφαλίδες
+        names=COLUMN_NAMES,     # Βάζει τις κεφαλίδες
+        encoding='utf-8', 
+        on_bad_lines='skip',    # Προσπερνάει χαλασμένες γραμμές
+        low_memory=False
+    )
     
     header_written = False
 
     for chunk in chunks:
+        # Εντοπίζει τις στήλες IP για ανωνυμοποίηση
         ip_cols_to_hash = ["Src_IP", "Dst_IP", "XSrc_IP", "XDst_IP"]
 
+        # Εφαρμογή της ανωνυμοποίησης σε κάθε στήλη IP
         for col in ip_cols_to_hash:
             if col in chunk.columns:
-                chunk[col] = chunk[col].apply(annonymize_ip)
-        
-        save_path = os.path.join(OUTPUT_FILE, "clean_" + file_name)
+                chunk[col] = chunk[col].apply(anonymize_ip)
+
+        # Αποθηκεύει το επεξεργασμένο κομμάτι στο νέο αρχείο εξόδου
+        save_path = os.path.join(OUTPUT_FOLDER, "clean_" + file_name)
+
+        # Τσεκάρει αν πρέπει να γράψει την κεφαλίδα ή να προσθέσει χωρίς αυτήν
         mode = 'w' if not header_written else 'a'
         chunk.to_csv(save_path, index=False, header=(not header_written), mode=mode)
         header_written = True
