@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import os
 import glob
+import psutil
 from dotenv import load_dotenv
 
 #*---- 1.ΡΥΘΜΙΣΕΙΣ ----
@@ -10,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 SALT_KEY_STR = os.getenv("THESIS_SALT_KEY")
 
-#! Έλεγχος αν λείπει το κλειδί
+# Έλεγχος αν λείπει το κλειδί
 if not SALT_KEY_STR:
     raise ValueError("ΣΦΑΛΜΑ: Δεν βρέθηκε το κλειδί στο αρχείο .env")
 
@@ -43,10 +44,32 @@ COLUMN_NAMES = [
     "Bytes_Out",
 ]
 
-#*---- 3.ΣΥΝΑΡΤΗΣΗ ΑΝΩΝΥΜΟΠΟΙΗΣΗΣ IP ----
+#*---- 3.ΣΥΝΑΡΤΙΣΗ ΥΠΟΛΟΓΙΣΜΟΥ ΒΕΛΤΙΣΤΟΥ ΜΕΓΕΘΟΥΣ CHUNK ----
+# Υπολογίζει το βέλτιστο μέγεθος chunk βάσει της διαθέσιμης μνήμης.
+def get_optimal_chunk_size(file_path, safety_factor=0.15):
+    try:
+        mem = psutil.virtual_memory()
+        available_ram = mem.available
+        sample = pd.read_csv(
+            file_path, 
+            nrows=2000,
+            header=None,
+            names=COLUMN_NAMES,
+            low_memory=False)
+        sample_memory_bytes = sample.memory_usage(deep=True).sum()
+        bytes_per_row = sample_memory_bytes / 2000
+
+        target_chunk_memory = available_ram * safety_factor
+        optimal_size = int(target_chunk_memory / bytes_per_row)
+
+        return max(10000, min(optimal_size, 2000000))
+    except Exception:
+        return 500000
+
+#*---- 4.ΣΥΝΑΡΤΗΣΗ ΑΝΩΝΥΜΟΠΟΙΗΣΗΣ IP ----
 # Δέχεται μια IP και επιστρέφει ένα HMAC-SHA256 hash 16 χαρακτήρων 
 def anonymize_ip(ip):
-    # Αν η IP είναι κενή ή παύλα, επιστρέφει "unkown"
+    # Αν η IP είναι κενή ή παύλα, επιστρέφει "unknown"
     if pd.isna(ip) or str(ip).strip() in ["", "-"]:
         return "unknown"
     
@@ -59,7 +82,7 @@ def anonymize_ip(ip):
     # Επιστρέφει τους πρώτους 16 χαρακτήρες του hash
     return hmac_obj.hexdigest()[:16]
 
-#*---- 4.ΕΠΕΞΕΡΓΑΣΙΑ ΑΡΧΕΙΩΝ ----
+#*---- 5.ΕΠΕΞΕΡΓΑΣΙΑ ΑΡΧΕΙΩΝ ----
 # Αναζήτηση αρχείων προς επεξεργασία και εκτύπωση πλήθους
 csv_files = glob.glob(os.path.join(INPUT_FOLDER, '*.csv'))
 print(f"Βρέθηκαν {len(csv_files)} αρχεία.")
@@ -68,11 +91,13 @@ for file_path in csv_files:
     file_name = os.path.basename(file_path)
     print(f"Επεξεργασία αρχείου: {file_name}")
 
-    # Διαβάζει το αρχείο σε κομμάτια 500.000 γραμμών για να μην γεμίσει η RAM
-    chunk_size = 500000
+    # Υπολογισμός βέλτιστου μεγέθους chunk
+    current_chunk_size = get_optimal_chunk_size(file_path)
+    print(f"   --> Chunk Size: {current_chunk_size:,} γραμμές")
+
     chunks = pd.read_csv(
         file_path,
-        chunksize=chunk_size, 
+        chunksize=current_chunk_size, # Χρήση του υπολογισμένου μεγέθους chunk
         header=None,            # Δεν έχει κεφαλίδες
         names=COLUMN_NAMES,     # Βάζει τις κεφαλίδες
         encoding='utf-8', 
@@ -82,7 +107,7 @@ for file_path in csv_files:
     
     header_written = False
 
-    for chunk in chunks:
+    for i, chunk in enumerate(chunks):
         # Εντοπίζει τις στήλες IP για ανωνυμοποίηση
         ip_cols_to_hash = ["Src_IP", "Dst_IP", "XSrc_IP", "XDst_IP"]
 
