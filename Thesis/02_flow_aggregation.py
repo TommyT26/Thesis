@@ -106,7 +106,7 @@ for file_path in files:
 
         del chunk
         del src_is_A
-        print(f"  Επεξεργάστηκε chunk {i} με {len(chunk)} γραμμές.")
+        print(f"  Επεξεργάστηκε chunk {i} με {chunk_len} γραμμές.")
 
     # Ενεργοποίηση Garbage Collector για απελευθέρωση μνήμης
     gc.collect()
