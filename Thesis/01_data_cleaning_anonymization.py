@@ -3,8 +3,8 @@ import hashlib
 import hmac
 import os
 import glob
-import psutil
 from dotenv import load_dotenv
+import utils
 
 #*---- 1.ΡΥΘΜΙΣΕΙΣ ----
 # Φορτώνουμε το κλειδί από το αρχείο .env
@@ -26,47 +26,7 @@ OUTPUT_FOLDER = 'processed_data/'
 if not os.path.exists(OUTPUT_FOLDER):
     os.makedirs(OUTPUT_FOLDER)
 
-#*---- 2.ΟΡΙΣΜΟΣ ΣΤΗΛΩΝ ---- 
-# Τα raw αρχεία του MikroTik δεν έχουν κεφαλίδες
-COLUMN_NAMES = [
-    "Event",
-    "XEvent",
-    "Protocol",
-    "Src_IP",
-    "Src_Port",
-    "Dst_IP",
-    "Dst_Port",
-    "XSrc_IP",
-    "XSrc_Port",
-    "XDst_IP",
-    "XDst_Port",
-    "Bytes_In",
-    "Bytes_Out",
-]
-
-#*---- 3.ΣΥΝΑΡΤΙΣΗ ΥΠΟΛΟΓΙΣΜΟΥ ΒΕΛΤΙΣΤΟΥ ΜΕΓΕΘΟΥΣ CHUNK ----
-# Υπολογίζει το βέλτιστο μέγεθος chunk βάσει της διαθέσιμης μνήμης.
-def get_optimal_chunk_size(file_path, safety_factor=0.15):
-    try:
-        mem = psutil.virtual_memory()
-        available_ram = mem.available
-        sample = pd.read_csv(
-            file_path, 
-            nrows=2000,
-            header=None,
-            names=COLUMN_NAMES,
-            low_memory=False)
-        sample_memory_bytes = sample.memory_usage(deep=True).sum()
-        bytes_per_row = sample_memory_bytes / 2000
-
-        target_chunk_memory = available_ram * safety_factor
-        optimal_size = int(target_chunk_memory / bytes_per_row)
-
-        return max(10000, min(optimal_size, 2000000))
-    except Exception:
-        return 500000
-
-#*---- 4.ΣΥΝΑΡΤΗΣΗ ΑΝΩΝΥΜΟΠΟΙΗΣΗΣ IP ----
+#*---- 2.ΣΥΝΑΡΤΗΣΗ ΑΝΩΝΥΜΟΠΟΙΗΣΗΣ IP ----
 # Δέχεται μια IP και επιστρέφει ένα HMAC-SHA256 hash 16 χαρακτήρων 
 def anonymize_ip(ip):
     # Αν η IP είναι κενή ή παύλα, επιστρέφει "unknown"
@@ -82,7 +42,7 @@ def anonymize_ip(ip):
     # Επιστρέφει τους πρώτους 16 χαρακτήρες του hash
     return hmac_obj.hexdigest()[:16]
 
-#*---- 5.ΕΠΕΞΕΡΓΑΣΙΑ ΑΡΧΕΙΩΝ ----
+#*---- 3.ΕΠΕΞΕΡΓΑΣΙΑ ΑΡΧΕΙΩΝ ----
 # Αναζήτηση αρχείων προς επεξεργασία και εκτύπωση πλήθους
 csv_files = glob.glob(os.path.join(INPUT_FOLDER, '*.csv'))
 print(f"Βρέθηκαν {len(csv_files)} αρχεία.")
@@ -92,14 +52,14 @@ for file_path in csv_files:
     print(f"Επεξεργασία αρχείου: {file_name}")
 
     # Υπολογισμός βέλτιστου μεγέθους chunk
-    current_chunk_size = get_optimal_chunk_size(file_path)
+    current_chunk_size = utils.get_optimal_chunk_size(file_path, column_names=utils.COLUMN_NAMES)
     print(f"   --> Chunk Size: {current_chunk_size:,} γραμμές")
 
     chunks = pd.read_csv(
         file_path,
         chunksize=current_chunk_size, # Χρήση του υπολογισμένου μεγέθους chunk
         header=None,            # Δεν έχει κεφαλίδες
-        names=COLUMN_NAMES,     # Βάζει τις κεφαλίδες
+        names=utils.COLUMN_NAMES,     # Βάζει τις κεφαλίδες
         encoding='utf-8', 
         on_bad_lines='skip',    # Προσπερνάει χαλασμένες γραμμές
         low_memory=False
