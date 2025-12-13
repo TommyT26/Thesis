@@ -18,7 +18,7 @@ print(f"Βρέθηκαν {len(bi_files)} αρχεία προς έλεγχο.\n")
 
 for bi_path in bi_files:
     bi_filename = os.path.basename(bi_path)
-    clean_filename = bi_filename.replace("bidirectional_", "clean_")
+    clean_filename = bi_filename.replace("bidirectional_", "")
     clean_path = os.path.join(CLEAN_FOLDER, clean_filename)
     
     if not os.path.exists(clean_path): continue
@@ -83,7 +83,7 @@ for bi_path in bi_files:
             print(f"         MATCH! A->B: {calc_ab} | B->A: {calc_ba}")
         else:
             print(f"         FAIL. Target A->B: {target_ab}, Found: {calc_ab}")
-            print(f"              Target B->A: {target_ba}, Found: {calc_ba}")
-            print(f"              Forward Rows: {len(forward)}, Backward Rows: {len(backward)}")
+            print(f"               Target B->A: {target_ba}, Found: {calc_ba}")
+            print(f"               Forward Rows: {len(forward)}, Backward Rows: {len(backward)}")
 
 print("\nΤέλος ελέγχου.")
