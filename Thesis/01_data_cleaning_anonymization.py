@@ -26,23 +26,18 @@ OUTPUT_FOLDER = 'processed_data/'
 if not os.path.exists(OUTPUT_FOLDER):
     os.makedirs(OUTPUT_FOLDER)
 
-#*---- 2.ΣΥΝΑΡΤΗΣΗ ΑΝΩΝΥΜΟΠΟΙΗΣΗΣ IP ----
-# Δέχεται μια IP και επιστρέφει ένα HMAC-SHA256 hash 16 χαρακτήρων 
-def anonymize_ip(ip):
-    # Αν η IP είναι κενή ή παύλα, επιστρέφει "unknown"
-    if pd.isna(ip) or str(ip).strip() in ["", "-"]:
-        return "unknown"
+# *---- 2. ΣΥΝΑΡΤΗΣΗ HMAC (Core Logic) ----
+def compute_hmac(ip_str):
+    #Check αν το ip είναι NaN ή κενό
+    s = str(ip_str).strip()
+    if s in ['', '-', 'nan', 'NaN', 'None']:
+        return 'unknown'
     
-    # Μετατροπή της IP σε bytes
-    msg_bytes = str(ip).encode('utf-8')
+    # Υπολογίζει το HMAC για ένα string.
+    msg_bytes = s.encode('utf-8')
+    return hmac.new(SALT_KEY_BYTES, msg_bytes, hashlib.sha256).hexdigest()[:16]
 
-    # Δημιουργία HMAC (Κλειδί, Μήνυμα, Αλγόριθμος)
-    hmac_obj = hmac.new(SALT_KEY_BYTES, msg_bytes, hashlib.sha256)
-
-    # Επιστρέφει τους πρώτους 16 χαρακτήρες του hash
-    return hmac_obj.hexdigest()[:16]
-
-#*---- 3.ΕΠΕΞΕΡΓΑΣΙΑ ΑΡΧΕΙΩΝ ----
+# *---- 3. ΕΠΕΞΕΡΓΑΣΙΑ ΑΡΧΕΙΩΝ (VECTORIZED STYLE) ----
 # Αναζήτηση αρχείων προς επεξεργασία και εκτύπωση πλήθους
 csv_files = glob.glob(os.path.join(INPUT_FOLDER, '*.csv'))
 print(f"Βρέθηκαν {len(csv_files)} αρχεία.")
@@ -74,7 +69,18 @@ for file_path in csv_files:
         # Εφαρμογή της ανωνυμοποίησης σε κάθε στήλη IP
         for col in ip_cols_to_hash:
             if col in chunk.columns:
-                chunk[col] = chunk[col].apply(anonymize_ip)
+                # --- ΒΕΛΤΙΣΤΟΠΟΙΗΣΗ (Vector-Style) ---
+                
+                # 1. Βρίσκει τις μοναδικές IPs σε αυτό το chunk (αφαιρώντας τα NaN)
+                unique_ips = chunk[col].dropna().unique()
+
+                # 2. Φτιάχνει ένα λεξικό { '192.168.1.1': 'hash_xyz', ... }
+                # Υπολογίζουμε το HMAC μόνο μία φορά για κάθε μοναδική IP!
+                ip_map = {ip: compute_hmac(str(ip)) for ip in unique_ips}
+
+                # 3. Αντικατάσταση (Map) - Πολύ γρήγορο σε Pandas
+                # Όπου δεν βρει IP (π.χ. NaN), βάζει 'unknown'
+                chunk[col] = chunk[col].map(ip_map).fillna('unknown')
 
         # Αποθηκεύει το επεξεργασμένο κομμάτι στο νέο αρχείο εξόδου
         save_path = os.path.join(OUTPUT_FOLDER, "clean_" + file_name)
