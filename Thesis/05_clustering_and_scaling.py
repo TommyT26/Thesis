@@ -45,8 +45,8 @@ X_scaled = scaler.fit_transform(X)
 
 # *---- 4. ΕΝΤΟΠΙΣΜΟΣ ΑΝΩΜΑΛΙΩΝ (ISOLATION FOREST) ----
 print("\n[Βήμα 2] Εκτέλεση Isolation Forest για εντοπισμό Scanners/Outliers...")
-# Το contamination=0.001 σημαίνει ότι περιμένουμε ~0.1% των hosts να είναι ανωμαλίες
-iso_forest = IsolationForest(contamination=0.001, random_state=42, n_jobs=-1)
+# Το contamination=0.015 σημαίνει ότι περιμένουμε ~1.5% των hosts να είναι ανωμαλίες
+iso_forest = IsolationForest(contamination=0.015, random_state=42, n_jobs=-1)
 # Επιστρέφει -1 για ανωμαλία, 1 για φυσιολογικό
 df['Is_Anomaly'] = iso_forest.fit_predict(X_scaled)
 
