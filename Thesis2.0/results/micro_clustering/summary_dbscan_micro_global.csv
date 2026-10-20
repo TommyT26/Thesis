@@ -1,0 +1,4 @@
+Profile_Group,Hosts_Count,Percentage_%,Median_Bytes,Total_Bytes,Bytes_In,Bytes_Out,Total_Flows,Unique_Peers,Avg_Bytes_Per_Flow,Active_Hours,Active_Days,Port_Entropy,Out_Ratio,TCP_Ratio,Hour_Entropy,Business_Ratio,Weekend_Ratio,Well_Known_Ratio,P2P_Port_Ratio,Unique_Ports,Flows_per_Peer,UDP_Ratio
+Cluster 0,34,53.12,5342788.0,7907632.85,5950289.44,1957343.41,18208.5,26.53,3338.46,22.91,8.0,0.57,0.23,0.21,0.94,0.45,0.26,1.0,0.0,3.32,706.62,0.79
+DBSCAN_Noise (-1),24,37.5,30582256.5,737856666.67,520747486.46,217109180.21,880015.88,2587.71,2730.82,14.25,5.67,1.49,0.47,0.54,0.57,0.61,0.18,0.74,0.01,3057.79,1738.51,0.46
+Cluster 1,6,9.38,94116902.5,117296007.5,75504287.5,41791720.0,18900.67,541.67,6992.8,5.5,1.83,0.73,0.35,0.67,0.43,0.99,0.0,0.93,0.0,30.33,31.03,0.33

@@ -1,0 +1,503 @@
+{
+  "generated": "2026-10-19T13:34:47+00:00",
+  "run": {
+    "steps": [
+      "portcheck"
+    ],
+    "succeeded": true,
+    "seconds": 56.6,
+    "cli_options": {}
+  },
+  "environment": {
+    "python": "3.14.2",
+    "python_full": "3.14.2 (tags/v3.14.2:df79316, Dec  5 2025, 17:18:21) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "machine": "AMD64",
+    "packages": {
+      "numpy": "2.3.5",
+      "pandas": "2.3.3",
+      "scikit-learn": "1.7.2",
+      "scipy": "1.16.3",
+      "matplotlib": "3.10.7",
+      "seaborn": "0.13.2",
+      "umap-learn": "0.5.12",
+      "numba": "0.68.0",
+      "llvmlite": "0.50.0",
+      "pynndescent": "0.6.0",
+      "joblib": "1.5.2",
+      "python-dotenv": "1.2.1"
+    }
+  },
+  "parameters": {
+    "RANDOM_STATE": 42,
+    "CONTAMINATION_RATE": 0.015,
+    "MACRO_CLUSTERS": 3,
+    "MICRO_CLUSTERS": 5,
+    "k_used": {},
+    "PARTIAL_DAYS": [],
+    "INTERNAL_SUBNET": "192.168.7.",
+    "BUSINESS_HOURS": [
+      8,
+      18
+    ],
+    "WELL_KNOWN_PORT_MAX": 1024,
+    "P2P_PORTS": [
+      6881,
+      6882,
+      6883,
+      6884,
+      6885,
+      6886,
+      6887,
+      6888,
+      6889,
+      6969,
+      51413
+    ],
+    "FEATURE_COLUMNS": [
+      "Bytes_In",
+      "Bytes_Out",
+      "Total_Flows",
+      "Unique_Peers",
+      "Avg_Bytes_Per_Flow",
+      "Active_Hours",
+      "Active_Days",
+      "Port_Entropy",
+      "Out_Ratio",
+      "TCP_Ratio",
+      "Hour_Entropy",
+      "Business_Ratio",
+      "Weekend_Ratio",
+      "Well_Known_Ratio",
+      "P2P_Port_Ratio"
+    ],
+    "LOG_FEATURES": [
+      "Bytes_In",
+      "Bytes_Out",
+      "Total_Flows",
+      "Unique_Peers",
+      "Avg_Bytes_Per_Flow"
+    ],
+    "LINEAR_FEATURES": [
+      "Active_Hours",
+      "Active_Days",
+      "Port_Entropy"
+    ],
+    "RATIO_FEATURES": [
+      "Out_Ratio",
+      "TCP_Ratio",
+      "Hour_Entropy",
+      "Business_Ratio",
+      "Weekend_Ratio",
+      "Well_Known_Ratio",
+      "P2P_Port_Ratio"
+    ],
+    "DBSCAN": {
+      "eps": null,
+      "eps_percentile": 50,
+      "min_samples": 5,
+      "min_samples_fraction": 0.0015,
+      "min_samples_max": 500,
+      "max_edges": 40000000
+    },
+    "CHUNK_SIZE": 100000
+  },
+  "inputs": {
+    "raw": {
+      "20251126.csv": {
+        "bytes": 363293192,
+        "modified": "2025-12-08T09:17:52+00:00"
+      },
+      "20251127.csv": {
+        "bytes": 722530972,
+        "modified": "2025-12-08T09:18:56+00:00"
+      },
+      "20251128.csv": {
+        "bytes": 554700777,
+        "modified": "2025-12-08T09:20:19+00:00"
+      },
+      "20251129.csv": {
+        "bytes": 584022944,
+        "modified": "2025-12-08T09:21:12+00:00"
+      },
+      "20251130.csv": {
+        "bytes": 679431685,
+        "modified": "2025-12-08T09:22:15+00:00"
+      },
+      "20251201.csv": {
+        "bytes": 431167001,
+        "modified": "2025-12-08T09:23:00+00:00"
+      },
+      "20251202.csv": {
+        "bytes": 361578339,
+        "modified": "2025-12-08T09:23:33+00:00"
+      },
+      "20251203.csv": {
+        "bytes": 317038712,
+        "modified": "2025-12-08T09:24:24+00:00"
+      }
+    },
+    "processed": {
+      "clean_20251126.csv": {
+        "bytes": 418171150,
+        "modified": "2026-10-15T14:36:51+00:00"
+      },
+      "clean_20251127.csv": {
+        "bytes": 830403354,
+        "modified": "2026-10-15T14:38:07+00:00"
+      },
+      "clean_20251128.csv": {
+        "bytes": 636683040,
+        "modified": "2026-10-15T14:39:04+00:00"
+      },
+      "clean_20251129.csv": {
+        "bytes": 670466653,
+        "modified": "2026-10-15T14:40:05+00:00"
+      },
+      "clean_20251130.csv": {
+        "bytes": 780144781,
+        "modified": "2026-10-15T14:41:14+00:00"
+      },
+      "clean_20251201.csv": {
+        "bytes": 495061433,
+        "modified": "2026-10-15T14:41:55+00:00"
+      },
+      "clean_20251202.csv": {
+        "bytes": 415245696,
+        "modified": "2026-10-15T14:42:31+00:00"
+      },
+      "clean_20251203.csv": {
+        "bytes": 364252824,
+        "modified": "2026-10-15T14:43:03+00:00"
+      }
+    },
+    "bidirectional": {
+      "bidir_20251126.csv": {
+        "bytes": 8148194,
+        "modified": "2026-10-16T12:32:24+00:00"
+      },
+      "bidir_20251127.csv": {
+        "bytes": 12856621,
+        "modified": "2026-10-16T12:33:03+00:00"
+      },
+      "bidir_20251128.csv": {
+        "bytes": 7212518,
+        "modified": "2026-10-16T12:33:32+00:00"
+      },
+      "bidir_20251129.csv": {
+        "bytes": 8532514,
+        "modified": "2026-10-16T12:34:02+00:00"
+      },
+      "bidir_20251130.csv": {
+        "bytes": 10516799,
+        "modified": "2026-10-16T12:34:38+00:00"
+      },
+      "bidir_20251201.csv": {
+        "bytes": 7628142,
+        "modified": "2026-10-16T12:35:02+00:00"
+      },
+      "bidir_20251202.csv": {
+        "bytes": 7513810,
+        "modified": "2026-10-16T12:35:21+00:00"
+      },
+      "bidir_20251203.csv": {
+        "bytes": 6792930,
+        "modified": "2026-10-16T12:35:39+00:00"
+      },
+      "temporal_20251126.csv": {
+        "bytes": 2693154,
+        "modified": "2026-10-16T12:32:22+00:00"
+      },
+      "temporal_20251127.csv": {
+        "bytes": 4363947,
+        "modified": "2026-10-16T12:33:00+00:00"
+      },
+      "temporal_20251128.csv": {
+        "bytes": 4149540,
+        "modified": "2026-10-16T12:33:30+00:00"
+      },
+      "temporal_20251129.csv": {
+        "bytes": 4357037,
+        "modified": "2026-10-16T12:33:59+00:00"
+      },
+      "temporal_20251130.csv": {
+        "bytes": 4928120,
+        "modified": "2026-10-16T12:34:34+00:00"
+      },
+      "temporal_20251201.csv": {
+        "bytes": 4344745,
+        "modified": "2026-10-16T12:35:00+00:00"
+      },
+      "temporal_20251202.csv": {
+        "bytes": 3999136,
+        "modified": "2026-10-16T12:35:20+00:00"
+      },
+      "temporal_20251203.csv": {
+        "bytes": 3831995,
+        "modified": "2026-10-16T12:35:37+00:00"
+      }
+    },
+    "profiles": {
+      "features_global.csv": {
+        "bytes": 16154330,
+        "modified": "2026-10-16T13:09:54+00:00",
+        "sha256": "3668d2f1c9f8dd39b7a232b20eb6dcfad3e9ee688e87c328e3c1fa4a48242116"
+      }
+    }
+  },
+  "outputs": {
+    "macro_clustering": {
+      "anomalies_macro_global.csv": {
+        "bytes": 364459,
+        "modified": "2026-10-19T06:55:05+00:00",
+        "sha256": "feae6e41757d8ad350245624585f5c2c1af7f732a0cf267bd0f9f5622c210559"
+      },
+      "clean_macro_global.csv": {
+        "bytes": 16428596,
+        "modified": "2026-10-19T06:55:06+00:00",
+        "sha256": "25c418106d65ae7b05d64e60f2efb4ff448e7761c83e137a1801abdf6e71054f"
+      },
+      "contingency_iso_dbscan.csv": {
+        "bytes": 142,
+        "modified": "2026-10-19T06:56:25+00:00",
+        "sha256": "f6e9b791bcc6cd06ac2605c040dee9aa9efbcf7b5a78f95ce8dbc2a07b087413"
+      },
+      "contingency_iso_dbscan_metrics.csv": {
+        "bytes": 316,
+        "modified": "2026-10-19T06:56:25+00:00",
+        "sha256": "eb31588fa3f354a0ee20904b79f27129cab80cc8c12bb5f06881381c12326d4f"
+      },
+      "summary_dbscan_macro_global.csv": {
+        "bytes": 1410,
+        "modified": "2026-10-19T06:55:07+00:00",
+        "sha256": "ec579b914dbdf688bc603aa81d8bd7ed0158026625d3dd3bb3497049f3ed18fd"
+      },
+      "summary_kmeans_macro_global.csv": {
+        "bytes": 880,
+        "modified": "2026-10-19T06:55:07+00:00",
+        "sha256": "c13dc85e375a5f87c8fe03f723c93347ada7680317faed9093bc7afaa405cfbd"
+      }
+    },
+    "micro_clustering": {
+      "micro_global.csv": {
+        "bytes": 15025,
+        "modified": "2026-10-19T06:56:53+00:00",
+        "sha256": "377ceebc4ee00c191bcd33c0ce6caa55f19d37345a1a7370b32de2197978db59"
+      },
+      "summary_dbscan_micro_global.csv": {
+        "bytes": 773,
+        "modified": "2026-10-19T06:56:53+00:00",
+        "sha256": "d3395af6b194c011577ffbe39fa92fc7f503a7b382f21afc579e87c1c0d9ac6f"
+      },
+      "summary_kmeans_micro_global.csv": {
+        "bytes": 1056,
+        "modified": "2026-10-19T06:56:53+00:00",
+        "sha256": "d22c57fee0b8ae24f7df11ee271a3473a5d90ebca1281e429bd2683e42199715"
+      }
+    },
+    "k_selection": {
+      "k_selection_macro.csv": {
+        "bytes": 2592,
+        "modified": "2026-10-16T13:12:45+00:00",
+        "sha256": "af006f012076e7695491ab0244ff0552a3e33c15dc7ce29dc5a8a4f8e9ca6e7a"
+      },
+      "k_selection_macro_dedup.csv": {
+        "bytes": 2602,
+        "modified": "2026-10-16T13:14:41+00:00",
+        "sha256": "8d3f85a01c0d39bddeabfe6402422a1ccf1c1121088bb3a6855668a73036df9c"
+      },
+      "k_selection_micro.csv": {
+        "bytes": 1673,
+        "modified": "2026-10-16T13:12:50+00:00",
+        "sha256": "86448512cd3707cc62ac6f4435bca2682715b797fe6ae465c1df60d1814a10f0"
+      }
+    },
+    "sensitivity": {
+      "contamination.csv": {
+        "bytes": 792,
+        "modified": "2026-10-19T06:53:36+00:00",
+        "sha256": "fa47b0a36d00762156882ad68e0072c0c042009d10165ebce40ef6c2948c0c99"
+      }
+    },
+    "stability": {
+      "alignment_macro.csv": {
+        "bytes": 507,
+        "modified": "2026-10-19T06:57:43+00:00",
+        "sha256": "44afd928996ab0151132c74956ef2c2bcd78d6fd6f401ff03b8b9825e1ca5322"
+      },
+      "alignment_micro.csv": {
+        "bytes": 551,
+        "modified": "2026-10-19T06:57:43+00:00",
+        "sha256": "4cea38adf4941da2ef4cff3ffb41434ab6858936c243bcffb15f2abaf127c997"
+      },
+      "ari_macro.csv": {
+        "bytes": 1271,
+        "modified": "2026-10-19T06:57:35+00:00",
+        "sha256": "95bcb123944258ecff7f413020cc779db87159e44041a440e64f26d28634c497"
+      },
+      "ari_micro.csv": {
+        "bytes": 1200,
+        "modified": "2026-10-19T06:57:43+00:00",
+        "sha256": "61a41b44dbcf97f1939b18398cd15a6abbc260d5b73d0bbcc0571bb658e08afc"
+      },
+      "composition_macro.csv": {
+        "bytes": 253,
+        "modified": "2026-10-19T06:57:43+00:00",
+        "sha256": "8950e0c27e3c452f8946348ee88e0de63162d07395d2621c43baf5db2d9123e8"
+      },
+      "composition_micro.csv": {
+        "bytes": 244,
+        "modified": "2026-10-19T06:57:43+00:00",
+        "sha256": "f08062e1ff5330d85477cbf7e15bba82c0c0bc1c947a3f07402055eb4d26439e"
+      },
+      "consistency_macro.csv": {
+        "bytes": 3072342,
+        "modified": "2026-10-19T06:57:36+00:00",
+        "sha256": "767de6e16ad65f75777dfd4703b35c2789eb9fe6fa2418f13f3ccb1cddb17557"
+      },
+      "consistency_micro.csv": {
+        "bytes": 1664,
+        "modified": "2026-10-19T06:57:43+00:00",
+        "sha256": "0af7af64f38ef4f5e8831e7c27134207f1bc37defea479c31585b70a124296a0"
+      },
+      "daily_labels_aligned_macro.csv": {
+        "bytes": 3409125,
+        "modified": "2026-10-19T06:57:43+00:00",
+        "sha256": "0341135aa1d2eeb6969a878e0d6faed7fa87a681e06a735a692b00c686d92aa9"
+      },
+      "daily_labels_aligned_micro.csv": {
+        "bytes": 2164,
+        "modified": "2026-10-19T06:57:43+00:00",
+        "sha256": "adb9ce07e122b688b6fc9180ea48a06d6c80dd645cafde49337d0301c942d74c"
+      },
+      "daily_labels_macro.csv": {
+        "bytes": 3409125,
+        "modified": "2026-10-19T06:57:36+00:00",
+        "sha256": "08780c35ea4302266683a6b108be07853f0f0af4676ed0767e2824d37896e7d4"
+      },
+      "daily_labels_micro.csv": {
+        "bytes": 2164,
+        "modified": "2026-10-19T06:57:43+00:00",
+        "sha256": "58e8a2646edef46eaa788ecd14ee82d0a306675908247d0eac110aa0459191cf"
+      }
+    },
+    "peers": {
+      "recurrence_peers.csv": {
+        "bytes": 26324,
+        "modified": "2026-10-19T06:59:57+00:00",
+        "sha256": "cd19c5760edd8312a6b02d69ec3994d28d260a0efc550b9861990ce64c88e89b"
+      },
+      "recurrence_peers_groups.csv": {
+        "bytes": 468,
+        "modified": "2026-10-19T06:59:57+00:00",
+        "sha256": "1ae36001871c302781f955bd483c4f54ef6a4410e83463f0a754d5fe808d1460"
+      },
+      "recurrence_ports.csv": {
+        "bytes": 755994,
+        "modified": "2026-10-19T06:59:57+00:00",
+        "sha256": "f2804ebaa78c89b13c3f760f26a46deb597ef638cbd5388c15a80e51e1cdd067"
+      },
+      "recurrence_ports_groups.csv": {
+        "bytes": 534,
+        "modified": "2026-10-19T06:59:57+00:00",
+        "sha256": "897712b6410cc595e2671a0cbf744b672ee30638c5054fd3f9ec3938231639e6"
+      }
+    },
+    "hourly": {
+      "hourly_macro_all.csv": {
+        "bytes": 723,
+        "modified": "2026-10-19T07:16:27+00:00",
+        "sha256": "7d37764f2b3b3a98e2b75f0b484756a4eb8102ebbf4ce25f598691c715e6475a"
+      },
+      "hourly_macro_all_summary.csv": {
+        "bytes": 212,
+        "modified": "2026-10-19T07:16:27+00:00",
+        "sha256": "d636afb1d8d98cc9f65ce697f59af032a5f4447f62f2c212de624bc800c3d29b"
+      },
+      "hourly_macro_weekdays.csv": {
+        "bytes": 724,
+        "modified": "2026-10-19T07:16:28+00:00",
+        "sha256": "385a197c73d35b91878ce5c28ada1be6a47023657625b154fc9740981e2a192a"
+      },
+      "hourly_macro_weekdays_summary.csv": {
+        "bytes": 212,
+        "modified": "2026-10-19T07:16:28+00:00",
+        "sha256": "1e2e17725559f1088ed212e44fb12bd2229ec895b1f45179003a11946d27f24c"
+      },
+      "hourly_micro_all.csv": {
+        "bytes": 1086,
+        "modified": "2026-10-19T07:16:28+00:00",
+        "sha256": "3682c7bca86624f3319a7454b7baa0e2066091228980c9ecbb4d6bb211c9f9d0"
+      },
+      "hourly_micro_all_summary.csv": {
+        "bytes": 244,
+        "modified": "2026-10-19T07:16:28+00:00",
+        "sha256": "479e093ece687ec2a64e8fbf23e937d3cb361dcf69e5be1686c610ab0a621039"
+      },
+      "hourly_micro_weekdays.csv": {
+        "bytes": 1093,
+        "modified": "2026-10-19T07:16:28+00:00",
+        "sha256": "f6697f0661d5120e93a02080222fc7fd7d3cdea75296c33b044834e1fde56bda"
+      },
+      "hourly_micro_weekdays_summary.csv": {
+        "bytes": 245,
+        "modified": "2026-10-19T07:16:28+00:00",
+        "sha256": "3f73efaa1068f57f4b9347ead7a921c817f342a32ccbf2610e9312f68816079d"
+      }
+    },
+    "ports": {
+      "port_pair_cases.csv": {
+        "bytes": 238,
+        "modified": "2026-10-19T13:34:47+00:00",
+        "sha256": "765b02972a730d1ef9590ffdf260c6b391b01cfe4cf99c8a843d4c76468ecf19"
+      },
+      "sequential_well_known.csv": {
+        "bytes": 2344,
+        "modified": "2026-10-19T13:34:47+00:00",
+        "sha256": "9629d3839a945e13d3c2a11336fac83b35181256937ee2f47ea44640bdb80ea0"
+      }
+    },
+    "graphs": {
+      "clean_macro_global_UMAP_DBSCAN.png": {
+        "bytes": 1950569,
+        "modified": "2026-10-19T07:17:56+00:00",
+        "sha256": "02537a9916734dabd170b693493831e373638a3360a28e7c96b650ed09c6b0d3"
+      },
+      "clean_macro_global_UMAP_KMeans.png": {
+        "bytes": 2201644,
+        "modified": "2026-10-19T07:17:53+00:00",
+        "sha256": "7d9374c74c558d9e48f6b9d94d9d8efb19e23122c0253adc57b1f0acc850d295"
+      },
+      "composition_macro.png": {
+        "bytes": 157036,
+        "modified": "2026-10-19T07:18:04+00:00",
+        "sha256": "6996a7f84d37b9b787c7a3f52c0898d51dd4a954487218d2f43f1c234ecfa25e"
+      },
+      "composition_micro.png": {
+        "bytes": 157015,
+        "modified": "2026-10-19T07:18:04+00:00",
+        "sha256": "2226d211fd0ac461c0af5064f9b2835fa01389265fc2d244a9988f7c4f6fdeb1"
+      },
+      "hourly_macro.png": {
+        "bytes": 355285,
+        "modified": "2026-10-19T07:18:05+00:00",
+        "sha256": "c567a614535a4598d7e337a42f043c17501b0730ccc9643d530ed23a8e384927"
+      },
+      "hourly_micro.png": {
+        "bytes": 496019,
+        "modified": "2026-10-19T07:18:05+00:00",
+        "sha256": "3e1aeb01b49c194bef30037968ee686af705396b6e2e8fcc28538a21487426c6"
+      },
+      "micro_global_UMAP_DBSCAN.png": {
+        "bytes": 231853,
+        "modified": "2026-10-19T07:18:03+00:00",
+        "sha256": "fd772a7888cf110f732935e758e650afe522048ce0f7f4dce4bba14b851eed1d"
+      },
+      "micro_global_UMAP_KMeans.png": {
+        "bytes": 245015,
+        "modified": "2026-10-19T07:18:03+00:00",
+        "sha256": "583418aebb67443676db0019051806dd2749283b082214dede3bfbbbbea5e4fb"
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+Profile_Group,Hosts_Count,Percentage_%,Median_Bytes,Total_Bytes,Bytes_In,Bytes_Out,Total_Flows,Unique_Peers,Avg_Bytes_Per_Flow,Active_Hours,Active_Days,Port_Entropy,Out_Ratio,TCP_Ratio,Hour_Entropy,Business_Ratio,Weekend_Ratio,Well_Known_Ratio,P2P_Port_Ratio,Unique_Ports,Flows_per_Peer,UDP_Ratio
+Cluster 0,88067,71.56,476.0,906.41,573.89,332.51,5.72,1.08,162.96,1.83,1.17,0.2,0.38,0.14,0.13,0.48,0.3,0.02,0.13,1.44,5.4,0.85
+Cluster 2,26972,21.92,7000.0,32779.6,19569.14,13210.47,143.01,1.53,229.1,10.79,3.14,1.12,0.38,0.21,0.64,0.45,0.31,0.02,0.17,15.49,95.35,0.79
+Cluster 1,6183,5.02,41856.0,253685.97,86608.89,167077.07,30.38,1.34,14918.84,2.2,1.69,0.06,0.67,0.81,0.14,0.81,0.09,0.94,0.01,1.22,24.46,0.18
+Anomalies (IsoForest),1847,1.5,829054.0,9642599.26,2839549.72,6803049.53,13213.04,49.34,11149.01,16.41,6.23,0.72,0.62,0.58,0.76,0.58,0.24,0.62,0.16,132.2,6771.67,0.41
