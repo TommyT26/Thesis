@@ -11,12 +11,27 @@ import umap
 
 from src.config import PATHS, BASE_DIR, RANDOM_STATE
 from src.utils.scaling import scale_features
+from src.models.populations import extra_levels, micro_title
 
 # (όνομα, φάκελος, πρότυπο αρχείων). Το micro περιέχει τους εσωτερικούς hosts.
 SOURCES = [
     ("Macro", PATHS['results_macro'], "clean_macro_*.csv"),
-    ("Micro", PATHS['results_micro'], "micro_*.csv"),
+    (micro_title(), PATHS['results_micro'], "micro_*.csv"),
 ]
+
+# Κάθε ιδιωτικό υποδίκτυο είναι πλέον κανονικός πληθυσμός του micro_profiling
+# και γράφει subnet_<x>_global.csv στον ίδιο φάκελο. Μπαίνει εδώ ώστε να
+# περνάει από τον ΙΔΙΟ κώδικα UMAP με τα macro και micro.
+#
+# Είχα φτιάξει γι' αυτά ξεχωριστό scatter με PCA, με το σκεπτικό ότι το UMAP
+# σε 26 σημεία δεν σημαίνει πολλά — με n_neighbors=15 η «γειτονιά» κάθε
+# σημείου είναι το 58% του συνόλου. Ισχύει, αλλά η εργασία ήδη τρέχει UMAP
+# στους 64 εσωτερικούς hosts: δύο διαφορετικές μέθοδοι προβολής για
+# πληθυσμούς του ίδιου μεγέθους είναι ασυνέπεια που χρειάζεται δικαιολογία,
+# και η δικαιολογία δεν στέκει. Το UMAP εδώ είναι εικονογράφηση· το
+# επιχείρημα το σηκώνουν οι δείκτες του kselect, το ARI και η ευστάθεια.
+for _key, _title in extra_levels():
+    SOURCES.append((_title, PATHS['results_micro'], f"{_key}_*.csv"))
 
 # (στήλη ετικετών, τίτλος)
 LABEL_COLUMNS = [
@@ -313,6 +328,24 @@ def run():
             found_any = True
         else:
             print(f" -> Δεν βρέθηκαν τα hourly_{level}_*.csv (τρέξε το στάδιο hourly).")
+
+    # Οι καμπύλες των δεικτών εγκυρότητας, ένα γράφημα ανά πληθυσμό. Μπαίνουν
+    # εδώ και όχι στο kselect γιατί το kselect είναι το στάδιο που ΜΕΤΡΑΕΙ: αν
+    # σχεδίαζε κι αυτό, κάθε αλλαγή σε ένα χρώμα θα κόστιζε μισή ώρα
+    # μετρήσεων. Οι τιμές μένουν στα CSV, η σχεδίαση γίνεται εδώ μαζί με όλα
+    # τα άλλα γραφήματα της εργασίας.
+    print("\nΔείκτες εγκυρότητας ανά k:")
+    from src.visualizations import plot_k
+    if plot_k.run(graphs_dir):
+        found_any = True
+
+    # Τα γραφήματα των υποδικτύων που ΔΕΝ έχουν αντίστοιχο εδώ: πού πάει η
+    # κίνησή τους, το ωριαίο προφίλ τους και η εξάρτηση από το k. Τα scatter
+    # τους τα έβγαλε ήδη ο βρόχος των SOURCES παραπάνω.
+    print("\nΙδιωτικά υποδίκτυα:")
+    from src.visualizations import plot_subnets
+    if plot_subnets.run(graphs_dir):
+        found_any = True
 
     if not found_any:
         print("Προειδοποίηση: Δεν βρέθηκαν αρχεία για οπτικοποίηση.")

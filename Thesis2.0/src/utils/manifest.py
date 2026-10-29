@@ -87,11 +87,10 @@ def k_actually_used():
     """
     Το k που δόθηκε ΣΤΗΝ ΠΡΑΞΗ στον K-Means, και από πού ήρθε.
 
-    Τα MACRO_CLUSTERS / MICRO_CLUSTERS του config είναι μόνο η προεπιλογή. Το
-    πραγματικό k μπορεί να έρθει από το --k-macro/--k-micro ή από την απάντηση
-    του χρήστη στην ερώτηση των σταδίων macro/micro. Χωρίς αυτό, το manifest
-    θα κατέγραφε την προεπιλογή ως «την παράμετρο της εκτέλεσης» ακόμη κι όταν
-    δεν ήταν.
+    Το K_PER_LEVEL του config είναι μόνο η προεπιλογή. Το πραγματικό k μπορεί
+    να έρθει από το --k-macro/--k-micro ή από την απάντηση του χρήστη στην
+    ερώτηση των σταδίων macro/micro. Χωρίς αυτό, το manifest θα κατέγραφε την
+    προεπιλογή ως «την παράμετρο της εκτέλεσης» ακόμη κι όταν δεν ήταν.
 
     Άδειο όταν η εκτέλεση δεν περιλάμβανε στάδιο που επιλέγει k.
     """
@@ -109,9 +108,16 @@ def parameters(config):
         'CONTAMINATION_RATE': config.CONTAMINATION_RATE,
         'MACRO_CLUSTERS': config.MACRO_CLUSTERS,
         'MICRO_CLUSTERS': config.MICRO_CLUSTERS,
+        # Η προεπιλογή ανά πληθυσμό: αυτό ισχύει σε μη διαδραστική εκτέλεση,
+        # οπότε χωρίς αυτό δεν φαίνεται με τι θα έτρεχε κάποιος που απλώς
+        # εκτελεί το pipeline. Το k_used παρακάτω λέει τι έγινε στην πράξη.
+        'K_PER_LEVEL': dict(config.K_PER_LEVEL),
         'k_used': k_actually_used(),
         'PARTIAL_DAYS': list(config.PARTIAL_DAYS),
         'INTERNAL_SUBNET': config.INTERNAL_SUBNET,
+        # Τα υποδίκτυα που συνθέτουν το εσωτερικό δίκτυο. Από μόνο του το
+        # INTERNAL_SUBNET δεν αρκεί πια για να αναπαραχθεί ο διαχωρισμός.
+        'SUBNET_PREFIXES': list(config.SUBNET_PREFIXES),
         'BUSINESS_HOURS': list(config.BUSINESS_HOURS),
         'WELL_KNOWN_PORT_MAX': config.WELL_KNOWN_PORT_MAX,
         'P2P_PORTS': sorted(config.P2P_PORTS),

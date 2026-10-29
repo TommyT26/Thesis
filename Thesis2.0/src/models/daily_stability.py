@@ -27,11 +27,11 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score
 
 from src.config import (PATHS, BASE_DIR, RANDOM_STATE,
-                        MACRO_CLUSTERS, MICRO_CLUSTERS,
                         LOG_FEATURES, LINEAR_FEATURES, RATIO_FEATURES)
 from src.utils.scaling import scale_features
 from src.features.extract_features import build_profiles
 from src.models.data_split import split_internal_external
+from src.models.populations import populations, extra_levels, default_k
 
 # Χαρακτηριστικά χωρίς νόημα μέσα σε μία μόνο ημέρα
 DEGENERATE_DAILY = {'Active_Days', 'Weekend_Ratio'}
@@ -47,6 +47,15 @@ REFERENCE_FILES = {
     'macro': ('macro_clustering', 'clean_macro_global.csv'),
     'micro': ('micro_clustering', 'micro_global.csv'),
 }
+
+# Τα υποδίκτυα γράφονται από το ίδιο στάδιο (micro_profiling) στον ίδιο
+# φάκελο, με το κλειδί τους ως πρόθεμα: subnet_192_168_8_global.csv.
+for _key, _ in extra_levels():
+    REFERENCE_FILES[_key] = ('micro_clustering', f'{_key}_global.csv')
+
+# Ο τίτλος κάθε level, για τις επικεφαλίδες των πινάκων.
+LEVEL_TITLES = {'macro': 'Εξωτερικοί hosts', 'micro': 'Εσωτερικοί hosts'}
+LEVEL_TITLES.update(dict(extra_levels()))
 
 DAILY_LOG = [c for c in LOG_FEATURES if c not in DEGENERATE_DAILY]
 DAILY_LINEAR = [c for c in LINEAR_FEATURES if c not in DEGENERATE_DAILY]
@@ -207,7 +216,7 @@ def align_all(level, labels_by_day):
 
 
 def analyse(level, labels_by_day, n_clusters):
-    title = "Εξωτερικοί hosts" if level == 'macro' else "Εσωτερικοί hosts"
+    title = LEVEL_TITLES.get(level, level)
     print(f"\n{'=' * 70}")
     print(f"  ΕΥΣΤΑΘΕΙΑ ΑΝΑ ΗΜΕΡΑ — {title} (k={n_clusters})")
     print(f"{'=' * 70}")
@@ -293,23 +302,37 @@ def run(k_macro=None, k_micro=None):
         print("Προειδοποίηση: Χρειάζονται τουλάχιστον δύο ημέρες. Παράλειψη.")
         return
 
-    k_macro = resolve_k('macro', k_macro, MACRO_CLUSTERS)
-    k_micro = resolve_k('micro', k_micro, MICRO_CLUSTERS)
-    print(f" -> {len(bidir_files)} ημέρες | k macro={k_macro}, micro={k_micro}")
+    pops = populations()
+    ks = {'macro': resolve_k('macro', k_macro, default_k('macro'))}
+    for key, _, _ in pops:
+        explicit = k_micro if key == 'micro' else None
+        ks[key] = resolve_k(key, explicit, default_k(key))
+    print(f" -> {len(bidir_files)} ημέρες | k: "
+          + ", ".join(f"{level}={value}" for level, value in ks.items()))
 
-    macro_labels, micro_labels = {}, {}
+    labels = {level: {} for level in ks}
     for path in bidir_files:
         day = day_of(path)
         print(f"    - Ομαδοποίηση ημέρας {day}...")
-        profiles = build_profiles([path])
-        internal, external = split_internal_external(profiles.reset_index())
-        for frame, store, k in ((external, macro_labels, k_macro),
-                                (internal, micro_labels, k_micro)):
-            labels = cluster_day(frame.set_index('Host'), k) if not frame.empty else None
-            store[day] = labels
+        profiles = build_profiles([path]).reset_index()
 
-    analyse('macro', macro_labels, k_macro)
-    analyse('micro', micro_labels, k_micro)
+        # Ο μακροσκοπικός πληθυσμός της ημέρας βγαίνει με τον ίδιο μη
+        # συμπληρωματικό διαχωρισμό που χρησιμοποιεί και το macro: εξωτερικοί
+        # είναι όσοι δεν ανήκουν σε ΚΑΝΕΝΑ από τα υποδίκτυα του
+        # SUBNET_PREFIXES, και οι διευθύνσεις δικτύου ή εκπομπής δεν μπαίνουν
+        # σε κανέναν από τους δύο πληθυσμούς. Καμία διεύθυνση δεν μετριέται
+        # δύο φορές: κάθε host ανήκει είτε στο macro είτε στο micro, και τα
+        # subnet_<x> levels είναι υποσύνολα του micro, όχι επιπλέον πληθυσμός.
+        internal, external = split_internal_external(profiles)
+        labels['macro'][day] = (cluster_day(external.set_index('Host'), ks['macro'])
+                                if not external.empty else None)
+        for key, _, hashes in pops:
+            frame = internal if key == 'micro' else profiles[profiles['Host'].isin(hashes)]
+            labels[key][day] = (cluster_day(frame.set_index('Host'), ks[key])
+                                if not frame.empty else None)
+
+    for level in ks:
+        analyse(level, labels[level], ks[level])
 
     print(f"\n -> Τα αποτελέσματα αποθηκεύτηκαν στο: {output_dir()}")
     print("--- Ολοκληρώθηκε η Ανάλυση Ευστάθειας ---")

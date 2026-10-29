@@ -17,7 +17,7 @@ def run(n_clusters=None):
 
     n_clusters: αν δοθεί, χρησιμοποιείται ως έχει (π.χ. από --k-macro).
     Αλλιώς το ζητάω από τον χρήστη δείχνοντας τους δείκτες εγκυρότητας. Σε μη
-    διαδραστική εκτέλεση πέφτει στο MACRO_CLUSTERS του config.py.
+    διαδραστική εκτέλεση πέφτει στο K_PER_LEVEL['macro'] του config.py.
     """
     print("\n--- Έναρξη: Μακροσκοπική Ανάλυση (Εξωτερικό Δίκτυο) ---")
     feature_files = glob.glob(os.path.join(PATHS['features'], "features_*.csv"))

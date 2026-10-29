@@ -27,9 +27,10 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import (silhouette_score, calinski_harabasz_score,
                              davies_bouldin_score, adjusted_rand_score)
 
-from src.config import PATHS, BASE_DIR, RANDOM_STATE, MACRO_CLUSTERS, MICRO_CLUSTERS
+from src.config import PATHS, BASE_DIR, RANDOM_STATE, FEATURE_COLUMNS
 from src.utils.scaling import scale_features
-from src.models.data_split import macro_dataset, micro_dataset
+from src.models.data_split import macro_dataset
+from src.models.populations import populations, extra_levels, default_k
 
 MACRO_K_RANGE = range(2, 16)
 MICRO_K_RANGE = range(2, 11)
@@ -40,10 +41,20 @@ GAP_SAMPLE = 20000
 STABILITY_ROUNDS = 10
 STABILITY_FRACTION = 0.6
 
+# (τίτλος, προεπιλεγμένο k) ανά level. Το k το δίνει η default_k, δηλαδή το
+# K_PER_LEVEL του config: είναι ό,τι προτείνει το Enter στην ερώτηση και ό,τι
+# ισχύει σιωπηλά σε μη διαδραστική εκτέλεση.
 LEVELS = {
-    'macro': ('Μακροσκοπική ανάλυση (εξωτερικοί hosts)', MACRO_CLUSTERS),
-    'micro': ('Μικροσκοπική ανάλυση (εσωτερικοί hosts)', MICRO_CLUSTERS),
+    'macro': ('Μακροσκοπική ανάλυση (εξωτερικοί hosts)', default_k('macro')),
+    'micro': ('Μικροσκοπική ανάλυση (εσωτερικοί hosts)', default_k('micro')),
 }
+
+# Κάθε ιδιωτικό υποδίκτυο του SUBNET_PREFIXES είναι κι αυτό ένα level, ώστε το
+# k του να βγαίνει από τους ίδιους δείκτες εγκυρότητας και όχι από ένα σκέτο
+# silhouette. Προστίθενται εδώ δυναμικά και δεν γράφονται ένα προς ένα, ώστε
+# μια αλλαγή στο config να φτάνει μόνη της μέχρι εδώ.
+for _key, _title in extra_levels():
+    LEVELS[_key] = (_title, default_k(_key))
 
 
 def output_dir():
@@ -232,7 +243,7 @@ def ask(prompt):
 
 
 # Τι k χρησιμοποιήθηκε ΣΤΗΝ ΠΡΑΞΗ σε αυτή την εκτέλεση, και από πού ήρθε.
-# Το manifest κατέγραφε μόνο το MACRO_CLUSTERS/MICRO_CLUSTERS του config.py,
+# Το manifest κατέγραφε μόνο τις προεπιλογές του config.py (K_PER_LEVEL),
 # αλλά το k μπορεί να έρθει από τρία σημεία: το config, το --k-macro/--k-micro,
 # ή την απάντηση του χρήστη στην ερώτηση. Αν κάποιος απαντούσε 4 ενώ το config
 # λέει 3, το manifest θα έγραφε 3 — δηλαδή το αρχείο που υπάρχει ειδικά για να
@@ -266,7 +277,11 @@ def choose_k(level, default=None):
         print("      (Για τεκμηριωμένη επιλογή τρέξε πρώτα:  python main.py --step kselect)")
         return remember(default, 'cli' if explicit else 'config')
 
-    if not sys.stdin.isatty():
+    # Διαδραστικό ΜΟΝΟ αν και η είσοδος και η έξοδος είναι τερματικό. Με
+    # `> log.txt` από κονσόλα η είσοδος μένει τερματικό: ο παλιός έλεγχος
+    # (μόνο stdin) έγραφε την ερώτηση μέσα στο αρχείο και περίμενε απάντηση
+    # που κανείς δεν έβλεπε να ζητείται.
+    if not (sys.stdin.isatty() and sys.stdout.isatty()):
         print(f"    - Μη διαδραστική εκτέλεση· χρήση k={default}.")
         return remember(default, 'cli' if explicit else 'config')
 
@@ -323,9 +338,27 @@ def run():
     if not clean_macro.empty:
         analyse('macro', scale_features(clean_macro), MACRO_K_RANGE)
 
-    internal = micro_dataset(df)
-    if not internal.empty:
-        analyse('micro', scale_features(internal), MICRO_K_RANGE,
+    # Κάθε πληθυσμός χωριστά: το εργαστήριο και κάθε ιδιωτικό υποδίκτυο.
+    # Το gap statistic και το bootstrap ARI είναι ακριβά, αλλά οι πληθυσμοί
+    # αυτοί έχουν δεκάδες hosts και όχι δεκάδες χιλιάδες.
+    for key, title, hashes in populations():
+        subset = df[df['Host'].isin(hashes)]
+        if subset.empty:
+            print(f"\n -> {title}: κανένας host στα προφίλ. Παράλειψη.")
+            continue
+        # Κατώτατο όριο μεγέθους. Δύο λόγοι, και μετράει ο μεγαλύτερος:
+        # το k δεν μπορεί να ξεπερνά τους hosts, και το gap statistic κάνει
+        # PCA για να φτιάξει τις τυχαίες αναφορές του, που απαιτεί
+        # περισσότερα δείγματα από χαρακτηριστικά. Χωρίς τον δεύτερο έλεγχο
+        # ένα υποδίκτυο με δέκα διευθύνσεις ρίχνει ΟΛΟ το στάδιο με
+        # ValueError, αντί να παραλειφθεί.
+        floor = max(max(MICRO_K_RANGE), len(FEATURE_COLUMNS))
+        if len(subset) <= floor:
+            print(f"\n -> {title}: μόλις {len(subset)} hosts. Χρειάζονται "
+                  f"περισσότεροι από {floor} (μέγιστο k {max(MICRO_K_RANGE)}, "
+                  f"χαρακτηριστικά {len(FEATURE_COLUMNS)}). Παράλειψη δεικτών.")
+            continue
+        analyse(key, scale_features(subset), MICRO_K_RANGE,
                 gap_refs=20, stab_rounds=20)
 
     # Έλεγχος ευρωστίας: οι ίδιοι δείκτες χωρίς τα ταυτόσημα προφίλ. Αν το k

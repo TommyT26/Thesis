@@ -1,13 +1,14 @@
 # src/preprocessing/clean_anonymize.py
 import os
 import glob
+import pandas as pd
 
-from src.config import PATHS, CHUNK_SIZE, INTERNAL_SUBNET
+from src.config import PATHS, CHUNK_SIZE, INTERNAL_SUBNET, SUBNET_PREFIXES
 from src.utils.memory import process_in_chunks
 from src.utils.anonymize import anonymize_series
 
 # Το raw export του MikroTik έχει 14 πεδία. Τα δύο τελευταία είναι In Byte
-# και Out Byte, όπως και στον πίνακα του proposal. #! στήλη packets δεν υπάρχει. #
+# και Out Byte, όπως και στον πίνακα του proposal· στήλη packets δεν υπάρχει.
 # Το Out Byte είναι 0 σε όλες τις 25,4 εκατ. εγγραφές, οπότε το κρατώ μόνο
 # για πιστότητα και δεν το χρησιμοποιώ πουθενά.
 MIKROTIK_COLUMNS = [
@@ -31,8 +32,15 @@ def resolve_host(orig, nat):
         Dst_IP = δημόσια IP του router, NAT_Dst_IP = 192.168.7.90  ->  Dst_Host = 192.168.7.90
     Σε εξερχόμενη κίνηση η Src_IP είναι ήδη εσωτερική και μένει ως έχει.
     """
-    nat_internal = nat.str.startswith(INTERNAL_SUBNET, na=False)
-    orig_internal = orig.str.startswith(INTERNAL_SUBNET, na=False)
+    # Όλα τα δικά μας υποδίκτυα, όχι μόνο το INTERNAL_SUBNET. Με ένα μόνο
+    # πρόθεμα, ένα ζεύγος NAT που έδειχνε σε 192.168.8.x ή 192.168.1.x δεν
+    # επιλυόταν και η ροή χρεωνόταν στη δημόσια διεύθυνση του router.
+    # Μετρημένο στα καθαρισμένα δεδομένα: 66.598 γραμμές από 25.403.323
+    # (0,26%) αλλάζουν host με αυτή τη διόρθωση. Μικρό ποσοστό, αλλά απαιτεί
+    # ξανατρέξιμο από το στάδιο clean για να εφαρμοστεί.
+    prefixes = tuple(SUBNET_PREFIXES) or (INTERNAL_SUBNET,)
+    nat_internal = nat.str.startswith(prefixes, na=False)
+    orig_internal = orig.str.startswith(prefixes, na=False)
     use_nat = nat_internal & ~orig_internal
     return orig.mask(use_nat, nat), use_nat
 
