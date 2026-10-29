@@ -27,6 +27,10 @@ STEPS = {
         'Εξαγωγή Χαρακτηριστικών (Bidir -> Profiles)', 'src.features.extract_features',
         [('bidirectional_data', 'bidir_*.csv')],
         "Τρέξε πρώτα:  python main.py --step aggregate"),
+    'privatescan': (
+        'Εντοπισμός Ιδιωτικών Διευθύνσεων (RFC1918)', 'src.utils.private_scan',
+        [('features', 'features_*.csv')],
+        "Τρέξε πρώτα:  python main.py --step features"),
     'kselect': (
         'Επιλογή Αριθμού Clusters k (Δείκτες Εγκυρότητας)', 'src.models.select_k',
         [('features', 'features_*.csv')],
@@ -59,6 +63,15 @@ STEPS = {
         'Έλεγχος Σημασίας του Service_Port', 'src.models.port_semantics',
         [('processed_data', 'clean_*.csv')],
         "Τρέξε πρώτα:  python main.py --step clean"),
+    'subnets': (
+        'Ανάλυση Ιδιωτικών Υποδικτύων (χωριστά)', 'src.models.subnet_analysis',
+        [('features', 'features_*.csv')],
+        "Τρέξε πρώτα:  python main.py --step features"),
+    'ablation': (
+        'Ablation Χαρακτηριστικών (ποια οικογένεια κρατά τη δομή)',
+        'src.models.ablation',
+        [('results_macro', 'clean_macro_*.csv'), ('results_micro', 'micro_*.csv')],
+        "Τρέξε πρώτα:  python main.py --step macro micro"),
     'hourly': (
         'Ωριαίο Προφίλ Δραστηριότητας ανά Ομάδα', 'src.models.hourly_profile',
         [('results_macro', 'clean_macro_*.csv'), ('results_micro', 'micro_*.csv')],
@@ -87,7 +100,12 @@ STEP_OPTIONS = {
 # Ορίζω τι ΜΕΝΕΙ ΕΞΩ και όχι τι μπαίνει, ώστε κάθε νέο στάδιο να προστίθεται
 # αυτόματα στο [M]. Με γραμμένη λίστα, δύο στάδια (agreement, peers) έμειναν
 # σιωπηλά έξω και φάνηκε μόνο όταν κάποιος πρόσεξε ότι λείπει μια φάση.
-M_EXCLUDED = ('clean', 'aggregate', 'verify', 'features', 'kselect', 'portcheck')
+# Το 'privatescan' μένει έξω για τον ίδιο λόγο με το 'features': δεν είναι
+# μοντέλο, είναι παραγωγή εισόδου. Ο κατάλογός του εξαρτάται μόνο από τα
+# προφίλ και το κλειδί, άρα δεν αλλάζει όταν ξανατρέχουν τα μοντέλα — και
+# κοστίζει 68 δευτερόλεπτα, που δεν έχει νόημα να πληρώνονται κάθε φορά.
+M_EXCLUDED = ('clean', 'aggregate', 'verify', 'features', 'privatescan',
+              'kselect', 'portcheck')
 
 _CFG = {}
 
@@ -150,6 +168,11 @@ def ports_dir():
     return os.path.join(base, 'results', 'ports')
 
 
+def subnets_dir():
+    _, base = load_config()
+    return os.path.join(base, 'results', 'subnets')
+
+
 def count_files(folder, pattern="*.csv"):
     if not os.path.exists(folder):
         return 0
@@ -200,8 +223,9 @@ def print_status():
     print(f" [10] Ευστάθεια ανά ημέρα:            {count_files(stability_dir(), 'ari_*.csv')} CSV")
     print(f" [11] Επανεμφάνιση peers/θυρών:       {count_files(peers_dir(), '*.csv')} CSV")
     print(f" [12] Έλεγχος Service_Port:           {count_files(ports_dir(), '*.csv')} CSV")
-    print(f" [13] Ωριαίο προφίλ ανά ομάδα:        {count_files(hourly_dir(), '*.csv')} CSV")
-    print(f" [14] Graphs (UMAP):                  {count_files(graphs_dir(), '*.png')} PNG")
+    print(f" [13] Ανάλυση υποδικτύων:             {count_files(subnets_dir(), '*.csv')} CSV")
+    print(f" [14] Ωριαίο προφίλ ανά ομάδα:        {count_files(hourly_dir(), '*.csv')} CSV")
+    print(f" [15] Graphs (UMAP):                  {count_files(graphs_dir(), '*.png')} PNG")
     print("=" * 60)
 
 
@@ -303,6 +327,7 @@ def clean_intermediate_files():
         peers_dir(),
         hourly_dir(),
         ports_dir(),
+        subnets_dir(),
         graphs_dir(),
     ]
     targets = [f for folder in folders for pattern in ('*.csv', '*.png')
